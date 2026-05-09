@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PbAudioEd</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=yes">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;800&family=Syne+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #11151b;
+      --panel: #212836;
+      --fg: #f2f8fc;
+      --ink2: #90a4ba;
+      --ink3: #4c5b6c;
+      --accent: #abff52;
+      --accent-dark: #385825;
+      --accent2: #179e50;
+      --blue: #4fc5f8;
+      --danger: #ff4444;
+      --amber: #ffc647;
+      --mono: 'Syne Mono', monospace;
+      --font: 'Syne', sans-serif;
+      --r8: 8px;
+      --r16: 16px;
+      --wave1: #5af59a;
+      --wave2: #fff46b;
+      --wave-bg: #181f2b;
+      --wave-danger: #ff4444;
+    }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg); color: var(--fg);
+      font-family: var(--font);
+      font-size: 20px;
+      font-weight: 500;
+      height: 100%;
+      width: 100%;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    #app {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem 0.5rem 2.2rem 0.5rem;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 1.3em;
+      margin-bottom: 1.1em;
+      flex-wrap: wrap;
+    }
+    .logo {
+      color: var(--accent2);
+      font-weight: 800;
+      font-family: var(--font);
+      letter-spacing: -0.018em;
+      font-size: 1.39em;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .logo span { color: var(--accent); }
+    .upload-btn {
+      padding: 0.72em 2.5em;
+      font-size: 1.07em;
+      font-weight: 700;
+      border-radius: var(--r8);
+      background: var(--accent-dark);
+      color: var(--accent);
+      border: 2px solid var(--accent);
+      outline: none;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      margin-left: auto;
+    }
+    .upload-btn:hover, .upload-btn:focus { background: var(--accent2); color: var(--bg); }
+    .file-input { display: none; }
+
+    .info-bar {
+      background: var(--panel);
+      border-radius: var(--r8);
+      padding: 0.7em 1.2em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.9em;
+      font-size: 1.02em;
+      margin-bottom: 1.4em;
+      flex-wrap: wrap;
+    }
+    .stat {margin-right:0.9em;}
+    .stat strong { font-family: var(--mono); color: var(--accent);}
+    .undo-btn {
+      padding: 0.41em 1.28em;
+      font-size: 1.08em;
+      background: var(--panel);
+      color: var(--blue);
+      border: 2px solid var(--blue);
+      border-radius: var(--r8);
+      cursor: pointer;
+      font-weight: 700;
+      margin-left: 0.6em;
+    }
+    .undo-btn:focus { outline: 2px solid var(--blue);}
+    .undo-btn:active { opacity: 0.94;}
+    .undo-btn[disabled]{ opacity: 0.33; cursor: not-allowed;}
+
+    .controls {
+      display: flex; gap: 1em;
+      align-items: center;
+      margin: 1.7em 0 1em 0;
+      flex-wrap: wrap;
+    }
+    .toolbar
+
