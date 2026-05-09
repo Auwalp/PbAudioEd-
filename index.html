@@ -112,5 +112,469 @@
       margin: 1.7em 0 1em 0;
       flex-wrap: wrap;
     }
-    .toolbar
-
+    .toolbar-btn {
+      padding: 0.41em 1.3em;
+      font-size: 1.05em;
+      font-weight: 740;
+      background: var(--panel);
+      color: var(--fg);
+      border: 2px solid var(--accent2);
+      border-radius: var(--r8);
+      cursor: pointer;
+      transition: background .17s, color .12s;
+    }
+    .toolbar-btn:focus { outline: 2px solid var(--accent2);}
+    .toolbar-btn.active, .toolbar-btn:hover { background: var(--accent2); color: var(--bg);}
+    .danger { border-color: var(--danger); color: var(--danger); }
+    .danger.active, .danger:hover {background: var(--danger); color: var(--bg);}
+    .small {font-size: 0.93em; padding:0.3em 1em;}
+    .fade-slider-wrap {
+      display:flex; align-items:center;
+      margin-left:1em;
+      gap:0.5em;
+    }
+    input[type=range] {
+      width: 120px; accent-color: var(--accent2);
+      vertical-align: middle; margin-left:6px;
+    }
+    @media (max-width: 700px) {
+      #app {max-width: 99vw; padding: 0.3rem;}
+    }
+    @media (max-width: 550px) {
+      .logo { font-size:1.08em; }
+      .info-bar, .controls, #wave-wrap {font-size:1.01em;}
+      #waveform {height:60px;}
+      #app {min-width: 0;}
+    }
+    #wave-wrap {
+      background: var(--wave-bg);
+      border-radius: 1.1em;
+      margin-top: 0.6em;
+      padding-bottom:1em;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+    #wave-container {
+      position:relative;
+      width: 100%;
+      min-height: 180px;
+      user-select: none;
+    }
+    #ruler {
+      width:100%;
+      height: 32px;
+      margin: 0; display: block;
+    }
+    #waveform {
+      width:100%;
+      height:90px;
+      margin:0; display: block;
+      background: var(--wave-bg);
+      cursor:crosshair;
+    }
+    #cuts-bar {
+      margin: 2em 0 1em 0;
+      color: var(--ink2);
+      font-size:1.08em;
+    }
+    #cuts-list {
+      display: flex; flex-direction: column; gap: 0.6em;
+      margin-bottom: 2em;
+    }
+    .cut-entry {
+      background: var(--panel);
+      border-radius: var(--r8);
+      padding: 0.5em 1.3em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1em;
+      color: var(--danger);
+      font-family: var(--mono);
+      font-size: 1.08em;
+    }
+    .cut-entry button {
+      background: none;
+      color: var(--ink2);
+      font-size: 0.93em;
+      cursor: pointer; border: none; padding: 0 0.4em;
+    }
+    .cut-entry button:hover { color: var(--danger);}
+    .fade-slider-wrap {
+      display:flex; align-items:center;
+      margin-left:1em;
+      gap:0.5em;
+    }
+    input[type=range] {
+      width: 120px; accent-color: var(--accent2);
+      vertical-align: middle; margin-left:6px;
+    }
+    @media (max-width: 700px) {
+      #app {max-width: 99vw; padding: 0.3rem;}
+    }
+    @media (max-width: 550px) {
+      .logo { font-size:1.08em; }
+      .info-bar, .controls, #wave-wrap {font-size:1.01em;}
+      #waveform {height:60px;}
+      #app {min-width: 0;}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <span class="logo">Pb<span>Audio</span>Ed</span>
+    <button class="upload-btn" onclick="fileInput.click()">Upload Audio</button>
+    <input class="file-input" type="file" id="fileInput" accept="audio/*">
+  </div>
+  <div class="info-bar" id="info-bar" style="display:none">
+    <span class="stat">File: <strong id="fileLbl"></strong></span>
+    <span class="stat">Duration: <strong id="durLbl"></strong></span>
+    <span class="stat">Sample Rate: <strong id="rateLbl"></strong></span>
+    <span class="stat">Cuts: <strong id="cutsCountLbl">0</strong></span>
+    <button class="undo-btn" id="undoBtn" onclick="undoCut()" disabled>Undo</button>
+  </div>
+  <div id="wave-wrap" style="display:none">
+    <div id="wave-container">
+      <canvas id="ruler"></canvas>
+      <canvas id="waveform"></canvas>
+    </div>
+    <div class="controls">
+      <button class="toolbar-btn" onclick="playPause()" id="playBtn">Play</button>
+      <button class="toolbar-btn" onclick="zoomIn()">Zoom In</button>
+      <button class="toolbar-btn" onclick="zoomOut()">Zoom Out</button>
+      <button class="toolbar-btn" onclick="zoomFit()">Fit All</button>
+      <button class="toolbar-btn danger" onclick="markCut()" id="cutBtn" disabled>Mark Cut</button>
+      <span class="fade-slider-wrap">
+        <label style="color:var(--amber);font-weight:700;">Blend Fade</label>
+        <input type="range" min="0" max="500" step="5" value="85" id="fadeMs" oninput="fadeVal.innerText=value+'ms'">
+        <span id="fadeVal" style="color:var(--amber);font-family:var(--mono);margin-left:0.4em;">85ms</span>
+      </span>
+    </div>
+  </div>
+  <div id="cuts-bar" style="display:none">Cuts (remove unwanted portions):</div>
+  <div id="cuts-list"></div>
+</div>
+<script>
+let fileInput = document.getElementById('fileInput');
+let wave = document.getElementById('waveform');
+let ruler = document.getElementById('ruler');
+let infoBar = document.getElementById('info-bar');
+let waveWrap = document.getElementById('wave-wrap');
+let cutsBar = document.getElementById('cuts-bar');
+let cutsList = document.getElementById('cuts-list');
+let undoBtn = document.getElementById('undoBtn');
+let cutBtn = document.getElementById('cutBtn');
+
+let audioCtx, audioBuffer, srcNode;
+let viewOffset = 0, viewDur = 12;
+let selStart = null, selEnd = null;
+let cuts = [];
+let undoStack = [];
+let zoomLevel = 1;
+let dragging = false, dragStartX = 0;
+let playing = false, playStart = 0, playTimer = null, displayTimer = null;
+
+function secFmt(s) {
+  if (s >= 3600) { // > 1 hr
+    let h = Math.floor(s/3600);
+    let m = Math.floor((s%3600)/60);
+    let sec = (s%60);
+    return `${h}h${m.toString().padStart(2,'0')}m${sec.toFixed(2).padStart(5,'0')}s`;
+  } else if (s>=60) {
+    let m = Math.floor(s/60);
+    let sec = (s%60);
+    return `${m}:${sec.toFixed(3).padStart(6,'0')}`;
+  } else {
+    return `${s.toFixed(3)}s`;
+  }
+}
+
+function loadFile(e) {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  infoBar.style.display = "flex";
+  waveWrap.style.display = "";
+  cutsBar.style.display = "";
+  document.getElementById("fileLbl").innerText = f.name;
+  document.getElementById("cutsCountLbl").innerText = "0";
+  cuts = []; undoStack = [];
+  selStart = null; selEnd = null;
+  fadeVal.innerText = fadeMs.value+"ms";
+  if(srcNode)srcNode.stop();
+  let reader = new FileReader();
+  reader.onload = async function() {
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    audioCtx.decodeAudioData(reader.result, buf => {
+      audioBuffer = buf;
+      document.getElementById("durLbl").innerText = secFmt(audioBuffer.duration);
+      document.getElementById("rateLbl").innerText = buf.sampleRate+" Hz";
+      viewDur = Math.min(audioBuffer.duration, 12);
+      viewOffset = 0;
+      undoBtn.disabled = true;
+      cutBtn.disabled = false;
+      zoomLevel = audioBuffer.duration/viewDur;
+      repaint();
+    });
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+fileInput.onchange = loadFile;
+
+// --- ZOOM
+function zoomIn(){
+  if(!audioBuffer)return;
+  let center = viewOffset+viewDur/2;
+  viewDur = Math.max(0.5, viewDur/1.45);
+  viewDur = Math.min(viewDur, audioBuffer.duration);
+  viewOffset = Math.max(0, center-viewDur/2);
+  zoomLevel = audioBuffer.duration/viewDur;
+  repaint();
+}
+function zoomOut(){
+  if(!audioBuffer)return;
+  let center = viewOffset+viewDur/2;
+  viewDur = Math.min(audioBuffer.duration, viewDur*1.28);
+  viewOffset = Math.max(0, center-viewDur/2);
+  zoomLevel = audioBuffer.duration/viewDur;
+  repaint();
+}
+function zoomFit(){
+  if(!audioBuffer)return;
+  viewDur = audioBuffer.duration;
+  viewOffset = 0;
+  zoomLevel = 1;
+  repaint();
+}
+// --- SELECTION/DRAG
+wave.onmousedown = function(e) {
+  if (!audioBuffer) return;
+  dragging = true;
+  dragStartX = e.offsetX;
+  selStart = px2t(e.offsetX);
+  selEnd = selStart;
+  repaint();
+};
+wave.onmousemove = function(e) {
+  if (!audioBuffer || !dragging)return;
+  selEnd = px2t(e.offsetX);
+  repaint();
+};
+document.onmouseup = function(e) {
+  if(dragging) {
+    dragging = false;
+    repaint();
+  }
+}
+wave.ontouchstart=function(e){
+  if(!audioBuffer)return;
+  dragging=true;
+  let x = e.touches[0].clientX - wave.getBoundingClientRect().left;
+  selStart=px2t(x);
+  selEnd=selStart;
+  repaint();
+};
+wave.ontouchmove=function(e){
+  if(!audioBuffer||!dragging)return;
+  let x = e.touches[0].clientX - wave.getBoundingClientRect().left;
+  selEnd=px2t(x);
+  repaint();
+};
+wave.ontouchend=document.onmouseup;
+
+// --- Time to X and px to time utilities
+function t2px(t){
+  return ((t-viewOffset)/viewDur)*wave.width;
+}
+function px2t(x){
+  return viewOffset + (x/wave.width)*viewDur;
+}
+
+// --- REPAINT (Wave + cuts + selection)
+function repaint(){
+  if (!audioBuffer) return;
+  let ctx = wave.getContext('2d');
+  wave.width = wave.offsetWidth;
+  wave.height = wave.offsetHeight;
+  ctx.clearRect(0,0,wave.width,wave.height);
+  // draw waveform
+  let data = audioBuffer.getChannelData(0);
+  let s0 = Math.floor(viewOffset * audioBuffer.sampleRate);
+  let s1 = Math.min(audioBuffer.length, Math.floor((viewOffset+viewDur)*audioBuffer.sampleRate));
+  let step = Math.max(1,Math.floor((s1-s0)/wave.width));
+  let ampH = wave.height/2*.85;
+  let mid = wave.height/2;
+  ctx.beginPath();
+  for(let x=0;x<wave.width;x++){
+    let vals=[];
+    for(let i=0;i<step;i++){
+      let at = s0 + Math.floor(i + x*(s1-s0)/wave.width);
+      vals.push(data[Math.min(at,data.length-1)]);
+    }
+    let min = Math.min(...vals), max = Math.max(...vals);
+    ctx.moveTo(x,mid+min*ampH);
+    ctx.lineTo(x,mid+max*ampH);
+  }
+  let g = ctx.createLinearGradient(0,20, 0,wave.height-20);
+  g.addColorStop(0,'#fff46b33');
+  g.addColorStop(.4,'var(--wave1)');
+  g.addColorStop(.6,'var(--wave2)');
+  g.addColorStop(1,'#5af59a40');
+  ctx.strokeStyle=g;ctx.lineWidth=2.1; ctx.stroke();
+
+  // draw cuts as red shaded regions
+  cuts.forEach(cut=>{
+    let x1 = t2px(cut.start), x2 = t2px(cut.end);
+    ctx.fillStyle='rgba(255,44,44,0.10)';
+    ctx.fillRect(x1,0,x2-x1,wave.height);
+    ctx.strokeStyle='var(--wave-danger)';
+    ctx.lineWidth = 2.3;
+    ctx.beginPath(); ctx.moveTo(x1,0); ctx.lineTo(x1,wave.height); ctx.moveTo(x2,0); ctx.lineTo(x2,wave.height); ctx.stroke();
+  });
+
+  // selection orange faded box
+  if(selStart!=null&&selEnd!=null&&Math.abs(selStart-selEnd)>0.002){
+    let x1 = t2px(selStart), x2 = t2px(selEnd);
+    ctx.fillStyle='rgba(250,230,62,0.15)';
+    ctx.fillRect(x1,0,x2-x1,wave.height);
+    ctx.strokeStyle=ctx.shadowColor='#ffc647'; ctx.shadowBlur=6;
+    ctx.strokeRect(x1,0,x2-x1,wave.height);
+    ctx.shadowBlur=0;
+  }
+  // playhead
+  if(playing||true){
+    let cur=timeNow();
+    let px = t2px(cur);
+    ctx.beginPath();
+    ctx.moveTo(px,0); ctx.lineTo(px,wave.height);
+    ctx.strokeStyle='var(--accent)';
+    ctx.lineWidth=2.4;
+    ctx.shadowColor='var(--accent)';
+    ctx.shadowBlur=10;
+    ctx.stroke();
+    ctx.shadowBlur=0;
+  }
+
+  // draw ruler
+  drawRuler();
+}
+// --- RULER
+function drawRuler(){
+  if(!audioBuffer)return;
+  let r = ruler;
+  r.width = wave.offsetWidth;
+  r.height = 32;
+  let ctx = r.getContext('2d');
+  ctx.clearRect(0,0,r.width,r.height);
+  ctx.font="bold 14px var(--mono)";
+  ctx.fillStyle=ctx.strokeStyle='var(--ink2)';
+  ctx.lineWidth=1;
+
+  let majorEvery = [0.01,.05,0.1,0.5,1,5,10,30,60,120,600,3600].find(i=>((i/viewDur)*r.width)>72) || 1;
+  let t = Math.ceil(viewOffset/majorEvery)*majorEvery;
+  for(;t<viewOffset+viewDur;t+=majorEvery){
+    let x = ((t-viewOffset)/viewDur)*r.width;
+    ctx.beginPath();
+    ctx.moveTo(x,0); ctx.lineTo(x,19); ctx.stroke();
+    let label = secFmt(t);
+    ctx.fillText(label, x+3, 27);
+  }
+}
+// --- PLAYBACK + LIVE PLAYHEAD
+function playPause() {
+  if(!audioBuffer)return;
+  if(playing) return stopPlay();
+  let from = selStart != null && selEnd != null && Math.abs(selStart-selEnd)>0.01 ? Math.min(selStart, selEnd): timeNow();
+  let to = selStart != null && selEnd != null && Math.abs(selStart-selEnd)>0.01 ? Math.max(selStart, selEnd): audioBuffer.duration;
+  stopPlay();
+  srcNode = audioCtx.createBufferSource();
+  srcNode.buffer = audioBuffer;
+  srcNode.connect(audioCtx.destination);
+  srcNode.start(0, from, to-from);
+  playStart = audioCtx.currentTime - from;
+  playing = true;
+  document.getElementById('playBtn').innerText = "Pause";
+  playTimer = setTimeout(stopPlay, (to-from)*1000+100);
+  displayTimer = setInterval(repaint,50);
+}
+function stopPlay() {
+  if(srcNode)try{srcNode.stop();}catch(e){}
+  playing = false;
+  document.getElementById('playBtn').innerText = "Play";
+  clearTimeout(playTimer);
+  clearInterval(displayTimer);
+  repaint();
+}
+function timeNow(){
+  if(!playing) return 0;
+  let t = audioCtx.currentTime - playStart;
+  return Math.max(0, Math.min(t, audioBuffer.duration));
+}
+
+// --- CUTS LOGIC + UNDO
+function markCut() {
+  if(selStart==null||selEnd==null||Math.abs(selStart-selEnd)<0.01){
+    alert("Drag a region to cut first."); return;
+  }
+  undoStack.push(JSON.parse(JSON.stringify(cuts)));
+  undoBtn.disabled = false;
+  cuts.push({start:Math.min(selStart,selEnd), end:Math.max(selStart,selEnd)});
+  selStart=selEnd=null;
+  document.getElementById("cutsCountLbl").innerText=cuts.length;
+  cutBtn.blur();
+  updateCuts();
+  repaint();
+}
+function undoCut(){
+  if(!undoStack.length) return;
+  cuts=undoStack.pop();
+  updateCuts();
+  document.getElementById("cutsCountLbl").innerText=cuts.length;
+  undoBtn.disabled = undoStack.length==0;
+  repaint();
+}
+function updateCuts(){
+  cutsList.innerHTML="";
+  if(!cuts.length) return;
+  cuts.forEach((cut,i)=>{
+    let div=document.createElement('div');
+    div.className='cut-entry';
+    div.innerHTML=`<span>${secFmt(cut.start)} — ${secFmt(cut.end)}</span>
+      <span>
+        <button onclick="removeCut(${i})" title="Remove cut">✕</button>
+      </span>`;
+    cutsList.appendChild(div);
+  });
+}
+function removeCut(i){
+  undoStack.push(JSON.parse(JSON.stringify(cuts)));
+  cuts.splice(i,1);
+  updateCuts();
+  document.getElementById("cutsCountLbl").innerText=cuts.length;
+  undoBtn.disabled = false;
+  repaint();
+}
+
+// --- BLEND FADE + EXPORT (No download but example cut logic!)
+let fadeMs = document.getElementById('fadeMs');
+let fadeVal = document.getElementById('fadeVal');
+
+// Infinite scroll/zoom on trackpad/mouse
+wave.addEventListener("wheel",function(e){
+  if(!audioBuffer)return;
+  if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){ // Zoom
+    if(e.deltaY<0)zoomIn();else zoomOut();
+  }else{ // Pan
+    viewOffset+=e.deltaX/wave.width*viewDur;
+    viewOffset=Math.max(0,Math.min(audioBuffer.duration-viewDur,viewOffset));
+    repaint();
+  }
+  e.preventDefault();
+},{passive:false});
+
+// Initial paint if there's an audio loaded immediately (optional)
+repaint();
+
+</script>
+</body>
+</html>
