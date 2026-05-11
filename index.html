@@ -1,493 +1,917 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SonicCut | Professional Audio Editor</title>
-  <style>
-    :root {
-      --bg: #0f1115;
-      --surface: #1a1d24;
-      --surface-hover: #252830;
-      --border: #2d313a;
-      --text: #e6e8eb;
-      --text-muted: #8b92a0;
-      --accent: #6c5ce7;
-      --accent-hover: #7a6ef5;
-      --success: #00b894;
-      --warning: #fdcb6e;
-      --danger: #d63031;
-      --radius: 8px;
-      --shadow: 0 4px 12px rgba(0,0,0,0.3);
-      --transition: all 0.2s ease;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#111318" />
+<title>WaveForge — Audio Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+<style>
+/* ══ VARIABLES ══════════════════════════════════ */
+:root{
+  --bg0:#0a0b0e;--bg1:#111318;--bg2:#181b22;--bg3:#1f232d;--bg4:#262b38;
+  --border:#2a2f3e;--bhi:#3a4155;
+  --ac:#00e5ff;--ac2:#7c4dff;--ac3:#ff4081;
+  --tx:#e8eaf0;--tx2:#8892a4;--tx3:#4a5568;
+  --ok:#00e676;--warn:#ffab40;
+  --mono:'JetBrains Mono',monospace;
+  --disp:'Syne',sans-serif;
+  --r:6px;--rl:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{height:100%;overscroll-behavior:none;}
+body{
+  height:100%;
+  background:var(--bg0);color:var(--tx);
+  font-family:var(--mono);font-size:13px;
+  overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+/* ══ APP SHELL ══════════════════════════════════ */
+#app{
+  display:flex;flex-direction:column;
+  /* dvh handles Android chrome address bar collapsing */
+  height:100dvh;height:100vh;
+  overflow:hidden;
+}
 
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .logo { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
-    .logo span { color: var(--text); }
+/* ══ TOP BAR ════════════════════════════════════ */
+#topbar{
+  display:flex;align-items:center;gap:6px;
+  padding:0 10px;height:50px;min-height:50px;
+  background:var(--bg1);border-bottom:1px solid var(--border);
+  overflow-x:auto;overflow-y:hidden;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  flex-shrink:0;
+}
+#topbar::-webkit-scrollbar{display:none;}
+.logo{
+  font-family:var(--disp);font-weight:800;font-size:15px;
+  color:var(--ac);white-space:nowrap;flex-shrink:0;margin-right:2px;
+}
+.logo span{color:var(--tx2);font-size:12px;}
+.vs{width:1px;height:22px;background:var(--border);flex-shrink:0;}
 
-    main {
-      flex: 1;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-    }
+/* ══ BUTTONS ════════════════════════════════════ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  height:34px;padding:0 10px;
+  border:1px solid var(--bhi);border-radius:var(--r);
+  background:var(--bg3);color:var(--tx);
+  font-family:var(--mono);font-size:12px;font-weight:600;
+  cursor:pointer;white-space:nowrap;flex-shrink:0;
+  transition:background .12s,border-color .12s,color .12s;
+}
+.btn:active{opacity:.7;}
+.btn.pri{background:var(--ac);color:#000;border-color:var(--ac);}
+.btn.pri:active{background:#33eaff;}
+.btn.dan{border-color:var(--ac3);color:var(--ac3);}
+.btn.dan:active{background:rgba(255,64,129,.12);}
+.btn.suc{border-color:var(--ok);color:var(--ok);}
+.btn.suc:active{background:rgba(0,230,118,.1);}
+.btn.act{background:rgba(0,229,255,.12);border-color:var(--ac);color:var(--ac);}
+.btn:disabled{opacity:.3;pointer-events:none;}
 
-    .drop-zone {
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 3rem;
-      text-align: center;
-      transition: var(--transition);
-      cursor: pointer;
-      background: var(--surface);
-    }
-    .drop-zone:hover, .drop-zone.drag-over {
-      border-color: var(--accent);
-      background: var(--surface-hover);
-    }
-    .drop-zone p { color: var(--text-muted); margin-top: 0.5rem; }
+.ib{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;
+  border:1px solid var(--bhi);border-radius:var(--r);
+  background:var(--bg3);color:var(--tx2);
+  cursor:pointer;flex-shrink:0;
+  transition:background .12s,border-color .12s,color .12s;
+}
+.ib:active{opacity:.7;}
+.ib.act{background:rgba(0,229,255,.12);border-color:var(--ac);color:var(--ac);}
+.ib:disabled{opacity:.3;pointer-events:none;}
 
-    .editor-panel {
-      display: none;
-      flex-direction: column;
-      gap: 1rem;
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 1.2rem;
-      box-shadow: var(--shadow);
-    }
-    .editor-panel.active { display: flex; }
+/* ══ TRANSPORT ROW ══════════════════════════════ */
+#transport{
+  display:flex;align-items:center;flex-wrap:wrap;
+  gap:6px;padding:7px 10px;
+  background:var(--bg1);border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+#time-dsp{
+  font-family:var(--mono);font-size:clamp(13px,3.8vw,19px);font-weight:700;
+  color:var(--ac);letter-spacing:1px;padding:4px 7px;
+  background:var(--bg0);border:1px solid var(--border);border-radius:var(--r);
+  white-space:nowrap;flex-shrink:0;
+}
+#sel-dsp{
+  font-size:11px;color:var(--tx2);padding:4px 7px;
+  background:var(--bg0);border:1px solid var(--border);border-radius:var(--r);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:min(200px,42vw);
+}
+#zoom-row{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+#zoom-row span{font-size:11px;color:var(--tx3);}
+input[type=range].zsl{
+  -webkit-appearance:none;appearance:none;
+  width:min(80px,18vw);height:4px;
+  background:var(--bg4);border-radius:2px;outline:none;cursor:pointer;
+}
+input[type=range].zsl::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--ac);cursor:pointer;
+}
+#vol-row{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+#vol-row span{font-size:11px;color:var(--tx3);}
+input[type=range].vsl{
+  -webkit-appearance:none;appearance:none;
+  width:min(70px,15vw);height:4px;
+  background:var(--bg4);border-radius:2px;outline:none;cursor:pointer;
+}
+input[type=range].vsl::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--ac);cursor:pointer;
+}
 
-    .waveform-container {
-      position: relative;
-      height: 180px;
-      background: var(--bg);
-      border-radius: var(--radius);
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    canvas { display: block; width: 100%; height: 100%; }
-    .selection-overlay {
-      position: absolute; top: 0; bottom: 0;
-      background: rgba(108, 92, 231, 0.25);
-      border-left: 2px solid var(--accent);
-      border-right: 2px solid var(--accent);
-      pointer-events: none;
-      display: none;
-    }
+/* ══ FADE PANEL ══════════════════════════════ */
+#fade-panel{
+  display:none;align-items:center;gap:6px;
+  padding:4px 8px;
+  background:rgba(124,77,255,.08);border:1px solid rgba(124,77,255,.3);
+  border-radius:var(--r);font-size:11px;color:var(--tx2);
+  white-space:nowrap;flex-shrink:0;
+}
+#fade-panel.show{display:flex;}
+#fade-panel label{display:flex;align-items:center;gap:4px;}
+#fade-panel input[type=range]{
+  width:min(60px,13vw);
+  -webkit-appearance:none;appearance:none;height:4px;
+  background:var(--bg4);border-radius:2px;outline:none;
+  accent-color:var(--ac2);cursor:pointer;
+}
+#fade-panel input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--ac2);cursor:pointer;
+}
 
-    .controls {
-      display: flex;
-      gap: 0.8rem;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    button {
-      background: var(--surface-hover);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 0.6rem 1rem;
-      border-radius: var(--radius);
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: var(--transition);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    button:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    button.primary { background: var(--accent); border-color: var(--accent); }
-    button.primary:hover { background: var(--accent-hover); }
+/* ══ WAVE AREA ═══════════════════════════════ */
+#wave-area{
+  flex:1;min-height:0;
+  position:relative;background:var(--bg0);
+  display:flex;flex-direction:column;overflow:hidden;
+}
 
-    .info-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      padding: 0.5rem 0;
-      border-top: 1px solid var(--border);
-      margin-top: auto;
-    }
-    .timer {
-      font-family: monospace;
-      font-size: 1.1rem;
-      color: var(--text);
-      background: var(--bg);
-      padding: 0.3rem 0.6rem;
-      border-radius: 4px;
-      min-width: 110px;
-      text-align: center;
-    }
+/* Upload screen */
+#upload-scr{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  z-index:10;background:var(--bg0);padding:20px;
+}
+#upload-scr.hidden{display:none;}
+.drop-card{
+  border:2px dashed var(--bhi);border-radius:var(--rl);
+  padding:28px 20px;text-align:center;
+  max-width:340px;width:100%;background:var(--bg1);
+  transition:border-color .2s,background .2s;
+}
+.drop-card.drag-over{border-color:var(--ac);background:rgba(0,229,255,.05);}
+.drop-card .ico{font-size:40px;display:block;margin-bottom:12px;}
+.drop-card h2{font-family:var(--disp);font-size:18px;margin-bottom:6px;}
+.drop-card p{color:var(--tx2);font-size:12px;margin-bottom:14px;line-height:1.5;}
+.drop-card .fmts{color:var(--tx3);font-size:11px;margin-top:8px;}
 
-    .status {
-      padding: 0.8rem;
-      background: var(--bg);
-      border-radius: var(--radius);
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      text-align: center;
-      min-height: 42px;
-    }
+/* Ruler */
+#ruler-wrap{
+  height:26px;min-height:26px;flex-shrink:0;
+  background:var(--bg1);border-bottom:1px solid var(--border);
+  overflow:hidden;position:relative;
+}
+#ruler-cv{display:block;position:absolute;top:0;left:0;}
 
-    @media (max-width: 600px) {
-      main { padding: 1rem; }
-      .controls { flex-direction: column; align-items: stretch; }
-      button { width: 100%; justify-content: center; }
-    }
-  </style>
+/* Waveform scroll */
+#wave-scroll{
+  flex:1;overflow-x:auto;overflow-y:hidden;min-height:0;
+  -webkit-overflow-scrolling:touch;position:relative;
+}
+#wave-scroll::-webkit-scrollbar{height:4px;}
+#wave-scroll::-webkit-scrollbar-track{background:var(--bg1);}
+#wave-scroll::-webkit-scrollbar-thumb{background:var(--bhi);border-radius:2px;}
+#wave-inner{position:relative;height:100%;min-height:110px;}
+#wave-cv{display:block;touch-action:none;cursor:crosshair;}
+
+#ph{
+  position:absolute;top:0;bottom:0;width:2px;
+  background:var(--warn);pointer-events:none;z-index:5;
+  box-shadow:0 0 6px rgba(255,171,64,.5);
+}
+#ph::before{
+  content:'';position:absolute;top:0;left:-5px;
+  border:6px solid transparent;border-top:8px solid var(--warn);
+}
+#sel-ovl{
+  position:absolute;top:0;bottom:0;
+  background:rgba(255,64,129,.17);
+  border-left:1px solid var(--ac3);border-right:1px solid var(--ac3);
+  pointer-events:none;z-index:4;display:none;
+}
+
+/* ══ SEEK STRIP ══════════════════════════════ */
+#seek-strip{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;
+  background:var(--bg1);border-top:1px solid var(--border);flex-shrink:0;
+}
+#seekbar{
+  flex:1;-webkit-appearance:none;appearance:none;
+  height:5px;background:var(--bg4);border-radius:3px;outline:none;cursor:pointer;
+}
+#seekbar::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--warn);cursor:pointer;box-shadow:0 0 6px rgba(255,171,64,.5);
+}
+#seek-dur{font-size:11px;color:var(--tx3);white-space:nowrap;}
+
+/* ══ STATUS BAR ══════════════════════════════ */
+#statusbar{
+  display:flex;align-items:center;gap:8px;
+  padding:4px 10px;
+  background:var(--bg1);border-top:1px solid var(--border);
+  font-size:11px;color:var(--tx3);flex-shrink:0;overflow:hidden;
+}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--tx3);flex-shrink:0;}
+.sdot.grn{background:var(--ok);box-shadow:0 0 5px rgba(0,230,118,.5);}
+.sdot.yel{background:var(--warn);}
+#status-msg{color:var(--tx2);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55vw;}
+
+/* ══ PROGRESS OVERLAY ════════════════════════ */
+#prog-ovl{
+  position:fixed;inset:0;background:rgba(10,11,14,.88);
+  display:none;flex-direction:column;align-items:center;
+  justify-content:center;z-index:100;gap:14px;padding:20px;
+}
+#prog-ovl.show{display:flex;}
+#prog-lbl{font-family:var(--disp);font-size:16px;color:var(--tx);text-align:center;}
+#prog-sub{font-size:11px;color:var(--tx3);text-align:center;max-width:280px;word-break:break-all;}
+#prog-bar-w{width:min(300px,80vw);height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+#prog-bar{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:3px;width:0%;transition:width .1s;}
+
+/* ══ MODAL ═══════════════════════════════════ */
+#modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.72);
+  z-index:200;display:none;align-items:center;justify-content:center;padding:20px;
+}
+#modal-bg.show{display:flex;}
+#modal{
+  background:var(--bg2);border:1px solid var(--bhi);border-radius:var(--rl);
+  padding:20px;width:100%;max-width:360px;
+}
+#modal h3{font-family:var(--disp);font-size:15px;margin-bottom:10px;}
+#modal p{color:var(--tx2);font-size:12px;line-height:1.6;margin-bottom:16px;}
+.mbts{display:flex;gap:8px;justify-content:flex-end;}
+
+/* ══ MOBILE OVERRIDES (<= 480px) ════════════ */
+@media(max-width:480px){
+  .logo span{display:none;}
+  .lbl{display:none;} /* hide text labels on topbar icon-buttons */
+  #sel-dsp{max-width:120px;}
+  #transport{gap:5px;padding:6px 8px;}
+}
+</style>
 </head>
 <body>
-  <header>
-    <div class="logo">Sonic<span>Cut</span></div>
-    <div id="file-name" style="color: var(--text-muted); font-size: 0.9rem;"></div>
-  </header>
+<div id="app">
 
-  <main>
-    <div class="drop-zone" id="drop-zone">
-      <h2>Drag & Drop Audio File</h2>
-      <p>Supports MP3, WAV, OGG, FLAC, AAC</p>
-      <input type="file" id="file-input" accept="audio/*" hidden>
+<!-- TOP BAR -->
+<header id="topbar">
+  <div class="logo">WaveForge <span>/ edit</span></div>
+  <div class="vs"></div>
+
+  <button class="btn pri" id="btn-upload">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <span class="lbl">Upload</span>
+  </button>
+  <input type="file" id="file-input" accept="audio/*" style="display:none" />
+
+  <div class="vs"></div>
+
+  <!-- Transport -->
+  <button class="ib" id="btn-stop" disabled title="Stop">
+    <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>
+  </button>
+  <button class="ib" id="btn-play" disabled title="Play/Pause">
+    <svg id="play-ic" width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+  </button>
+  <button class="ib" id="btn-loop" disabled title="Loop">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+  </button>
+
+  <div class="vs"></div>
+
+  <!-- Edit -->
+  <button class="btn dan" id="btn-cut" disabled title="Cut selection">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+    <span class="lbl">Cut</span>
+  </button>
+  <button class="btn" id="btn-fade" disabled title="Fade">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="2" y1="20" x2="22" y2="4"/></svg>
+    <span class="lbl">Fade</span>
+  </button>
+
+  <div class="vs"></div>
+
+  <!-- Undo/Redo -->
+  <button class="ib" id="btn-undo" disabled title="Undo">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>
+  </button>
+  <button class="ib" id="btn-redo" disabled title="Redo">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 014-4h12"/></svg>
+  </button>
+
+  <div class="vs"></div>
+
+  <button class="btn" id="btn-sel-all" disabled><span class="lbl">Sel All</span><span style="display:none" class="lbl-hide">All</span></button>
+  <button class="btn" id="btn-sel-clr" disabled><span class="lbl">Clear</span></button>
+
+  <div class="vs"></div>
+
+  <button class="btn suc" id="btn-export" disabled>
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span class="lbl">Export WAV</span>
+  </button>
+</header>
+
+<!-- TRANSPORT / CONTROLS -->
+<div id="transport">
+  <div id="time-dsp">00:00:00.000</div>
+  <div id="sel-dsp">No selection</div>
+  <div class="vs" style="height:22px"></div>
+
+  <div id="zoom-row">
+    <span>Zoom</span>
+    <button class="ib" id="btn-zo" disabled style="width:28px;height:28px;">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+    </button>
+    <input type="range" class="zsl" id="zoom-sl" min="1" max="200" value="1" disabled />
+    <button class="ib" id="btn-zi" disabled style="width:28px;height:28px;">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+    </button>
+    <button class="btn" id="btn-fit" disabled style="height:28px;padding:0 7px;font-size:11px;">Fit</button>
+  </div>
+
+  <!-- Fade panel (shown when Fade toggled) -->
+  <div id="fade-panel">
+    <label>In <input type="range" id="fi-ms" min="0" max="500" value="30" /></label>
+    <label>Out <input type="range" id="fo-ms" min="0" max="500" value="30" /></label>
+    <button class="btn" id="btn-apl-fade" style="height:28px;padding:0 7px;font-size:11px;" disabled>Apply</button>
+  </div>
+
+  <div id="vol-row">
+    <span>Vol</span>
+    <input type="range" class="vsl" id="vol-sl" min="0" max="2" step="0.01" value="1" />
+  </div>
+</div>
+
+<!-- WAVEFORM AREA -->
+<div id="wave-area">
+  <div id="upload-scr">
+    <div class="drop-card" id="drop-zone">
+      <span class="ico">🎧</span>
+      <h2>Drop audio here</h2>
+      <p>or tap Upload in the toolbar above to choose a file</p>
+      <button class="btn pri" style="margin:0 auto;" onclick="document.getElementById('file-input').click()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Choose File
+      </button>
+      <div class="fmts">MP3 · WAV · OGG · FLAC · M4A</div>
     </div>
+  </div>
 
-    <div class="editor-panel" id="editor">
-      <div class="waveform-container">
-        <canvas id="waveform"></canvas>
-        <div class="selection-overlay" id="selection"></div>
-      </div>
+  <div id="ruler-wrap"><canvas id="ruler-cv" height="26"></canvas></div>
 
-      <div class="controls">
-        <button id="play-btn">▶ Play</button>
-        <button id="pause-btn" disabled>⏸ Pause</button>
-        <button id="stop-btn" disabled>⏹ Stop</button>
-        <button id="undo-btn" disabled>↩ Undo</button>
-        <button id="ripple-cut-btn" disabled>✂ Ripple Cut</button>
-      </div>
-
-      <div class="status" id="status">Load an audio file to begin editing</div>
-
-      <div class="info-bar">
-        <span id="duration">00:00.00</span>
-        <div class="timer" id="timer">00:00.00</div>
-        <span id="selection-info"></span>
-      </div>
+  <div id="wave-scroll">
+    <div id="wave-inner">
+      <canvas id="wave-cv"></canvas>
+      <div id="ph"></div>
+      <div id="sel-ovl"></div>
     </div>
-  </main>
+  </div>
+</div>
 
-  <script>
-    // Audio Context & State
-    let audioCtx;
-    let audioBuffer;
-    let sourceNode;
-    let isPlaying = false;
-    let playbackOffset = 0;
-    let playbackStartTime = 0;
-    let undoStack = [];
-    const MAX_UNDO = 20;
+<!-- SEEK STRIP -->
+<div id="seek-strip">
+  <svg width="11" height="11" fill="none" stroke="var(--tx3)" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 7 13 17 8 12 1 19"/><polyline points="17 7 23 7 23 13"/></svg>
+  <input type="range" id="seekbar" min="0" max="1000" value="0" disabled />
+  <span id="seek-dur">00:00:00</span>
+</div>
 
-    // Selection
-    let selectionStart = null;
-    let selectionEnd = null;
-    let isSelecting = false;
-    let mouseDownX = 0;
+<!-- STATUS BAR -->
+<div id="statusbar">
+  <div class="sdot" id="a-dot"></div>
+  <span id="a-status">No file</span>
+  <div class="sdot" id="h-dot"></div>
+  <span id="h-status">0/0</span>
+  <span id="status-msg">Ready — upload an audio file</span>
+</div>
 
-    // DOM Elements
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const editor = document.getElementById('editor');
-    const fileNameEl = document.getElementById('file-name');
-    const canvas = document.getElementById('waveform');
-    const ctx = canvas.getContext('2d');
-    const selectionEl = document.getElementById('selection');
-    const playBtn = document.getElementById('play-btn');
-    const pauseBtn = document.getElementById('pause-btn');
-    const stopBtn = document.getElementById('stop-btn');
-    const undoBtn = document.getElementById('undo-btn');
-    const rippleCutBtn = document.getElementById('ripple-cut-btn');
-    const statusEl = document.getElementById('status');
-    const timerEl = document.getElementById('timer');
-    const durationEl = document.getElementById('duration');
-    const selectionInfoEl = document.getElementById('selection-info');
+</div><!-- #app -->
 
-    // Initialize Audio Context on user gesture
-    function initAudio() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+<!-- PROGRESS OVERLAY -->
+<div id="prog-ovl">
+  <div id="prog-lbl">Processing…</div>
+  <div id="prog-bar-w"><div id="prog-bar"></div></div>
+  <div id="prog-sub"></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-bg">
+  <div id="modal">
+    <h3 id="modal-title">Confirm</h3>
+    <p id="modal-body">Are you sure?</p>
+    <div class="mbts">
+      <button class="btn" id="modal-cancel">Cancel</button>
+      <button class="btn dan" id="modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ── DOM ─────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const btnUpload  = $('btn-upload'), fileInput  = $('file-input');
+const btnPlay    = $('btn-play'),   btnStop    = $('btn-stop');
+const btnLoop    = $('btn-loop'),   btnCut     = $('btn-cut');
+const btnFade    = $('btn-fade'),   btnUndo    = $('btn-undo');
+const btnRedo    = $('btn-redo'),   btnExport  = $('btn-export');
+const btnZI      = $('btn-zi'),     btnZO      = $('btn-zo');
+const btnFit     = $('btn-fit'),    btnSelAll  = $('btn-sel-all');
+const btnSelClr  = $('btn-sel-clr'),zoomSl    = $('zoom-sl');
+const volSl      = $('vol-sl'),     seekbar    = $('seekbar');
+const seekDur    = $('seek-dur'),   timeDsp    = $('time-dsp');
+const selDsp     = $('sel-dsp'),    waveCv     = $('wave-cv');
+const rulerCv    = $('ruler-cv'),   waveScroll = $('wave-scroll');
+const waveInner  = $('wave-inner'), waveArea   = $('wave-area');
+const ph         = $('ph'),         selOvl     = $('sel-ovl');
+const uploadScr  = $('upload-scr'), dropZone   = $('drop-zone');
+const progOvl    = $('prog-ovl'),   progBar    = $('prog-bar');
+const progLbl    = $('prog-lbl'),   progSub    = $('prog-sub');
+const fadePnl    = $('fade-panel'), fiMs       = $('fi-ms');
+const foMs       = $('fo-ms'),      btnAplFade = $('btn-apl-fade');
+const statusMsg  = $('status-msg'), aDot       = $('a-dot');
+const aStatus    = $('a-status'),   hDot       = $('h-dot');
+const hStatus    = $('h-status'),   modalBg    = $('modal-bg');
+const modalTitle = $('modal-title'),modalBody  = $('modal-body');
+const modalCancel= $('modal-cancel'),modalOk   = $('modal-ok');
+
+const WCX = waveCv.getContext('2d');
+const RCX = rulerCv.getContext('2d');
+
+/* ── Audio ───────────────────────────────── */
+const actx = new (window.AudioContext || window.webkitAudioContext)();
+const gain = actx.createGain();
+gain.connect(actx.destination);
+
+/* ── State ───────────────────────────────── */
+let buf      = null;     // AudioBuffer
+let history  = [], redo = [];
+const MXHST  = 20;
+
+let src      = null;     // BufferSource
+let playing  = false;
+let looping  = false;
+let t0       = 0;        // actx.currentTime at play
+let off0     = 0;        // seconds offset at play
+let curS     = 0;        // current sample
+let raf      = null;
+
+let zoom     = 1;
+let bpps     = 1;        // base pixels-per-sample
+let totPx    = 1;
+
+let selA     = -1, selB = -1;
+let dragging = false, dragA = 0;
+
+let wd       = null;     // wave peaks data
+
+/* ── Helpers ─────────────────────────────── */
+function fmt(sec, ms=true){
+  if(!isFinite(sec)||sec<0)sec=0;
+  const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=Math.floor(sec%60);
+  const ms3=Math.floor((sec%1)*1000);
+  const b=[h,m,s].map(n=>String(n).padStart(2,'0')).join(':');
+  return ms?`${b}.${String(ms3).padStart(3,'0')}`:b;
+}
+const s2t  = s => buf ? s / buf.sampleRate : 0;
+const t2s  = t => buf ? Math.round(t * buf.sampleRate) : 0;
+const msg  = m => { statusMsg.textContent = m; };
+
+function showProg(lbl,sub=''){progLbl.textContent=lbl;progSub.textContent=sub;progBar.style.width='0%';progOvl.classList.add('show');}
+function updProg(p,sub=''){progBar.style.width=p+'%';if(sub)progSub.textContent=sub;}
+function hideProg(){progOvl.classList.remove('show');}
+
+function confirm(title,body){
+  return new Promise(res=>{
+    modalTitle.textContent=title; modalBody.textContent=body;
+    modalBg.classList.add('show');
+    const done=ok=>()=>{modalBg.classList.remove('show');clean();res(ok);};
+    const y=done(true),n=done(false);
+    const clean=()=>{modalOk.removeEventListener('click',y);modalCancel.removeEventListener('click',n);};
+    modalOk.addEventListener('click',y); modalCancel.addEventListener('click',n);
+  });
+}
+
+/* ── Controls sync ───────────────────────── */
+function sync(){
+  const has  = !!buf;
+  const hsel = has && selA>=0 && selB>selA;
+  [btnPlay,btnStop,btnLoop,btnZI,btnZO,btnFit,btnSelAll,btnSelClr,zoomSl,seekbar,btnExport]
+    .forEach(el=>el.disabled=!has);
+  btnCut.disabled=!hsel; btnFade.disabled=!hsel; btnAplFade.disabled=!hsel;
+  btnUndo.disabled=history.length===0; btnRedo.disabled=redo.length===0;
+  hStatus.textContent=`${history.length}/${MXHST}`;
+  hDot.className='sdot'+(history.length?' yel':'');
+}
+
+/* ── History ─────────────────────────────── */
+function cpBuf(src){
+  const d=actx.createBuffer(src.numberOfChannels,src.length,src.sampleRate);
+  for(let c=0;c<src.numberOfChannels;c++)d.getChannelData(c).set(src.getChannelData(c));
+  return d;
+}
+function pushH(b){history.push(b);if(history.length>MXHST)history.shift();redo=[];sync();}
+function doUndo(){if(!history.length)return;redo.push(buf);buf=history.pop();onBufChg();}
+function doRedo(){if(!redo.length)return;history.push(buf);buf=redo.pop();onBufChg();}
+function onBufChg(keepPos=false){
+  stopAudio(false);
+  if(!keepPos){curS=0;off0=0;}
+  buildWD(); fitZoom(); updateSelDsp(); sync();
+}
+
+/* ── Load file ───────────────────────────── */
+async function loadFile(file){
+  if(!file)return;
+  if(actx.state==='suspended')actx.resume();
+  msg('Loading…'); showProg('Decoding audio…',file.name);
+  try{
+    const ab=await file.arrayBuffer();
+    updProg(30,'Decoding…');
+    const decoded=await actx.decodeAudioData(ab);
+    updProg(80,'Building waveform…');
+    buf=decoded; selA=selB=-1; curS=off0=0;
+    uploadScr.classList.add('hidden');
+    aDot.className='sdot grn'; aStatus.textContent='Loaded';
+    seekbar.max=1000; seekbar.value=0;
+    seekDur.textContent=fmt(decoded.duration,false);
+    buildWD(); fitZoom(); sync();
+    updProg(100,'Done');
+    msg(`${file.name}  ·  ${fmt(decoded.duration,false)}  ·  ${decoded.sampleRate} Hz`);
+    setTimeout(hideProg,500);
+  }catch(e){hideProg();msg('Error: '+e.message);alert('Could not decode audio:\n'+e.message);}
+}
+
+/* ── Wave peaks ──────────────────────────── */
+function buildWD(){
+  if(!buf)return;
+  const ch=buf.getChannelData(0),total=buf.length;
+  const step=Math.max(1,Math.floor(total/8000));
+  const cnt=Math.ceil(total/step);
+  const mn=new Float32Array(cnt),mx=new Float32Array(cnt);
+  for(let i=0;i<cnt;i++){
+    let lo=1,hi=-1;
+    const s=i*step,e=Math.min(s+step,total);
+    for(let j=s;j<e;j++){if(ch[j]<lo)lo=ch[j];if(ch[j]>hi)hi=ch[j];}
+    mn[i]=lo; mx[i]=hi;
+  }
+  wd={mn,mx,step,cnt};
+}
+
+/* ── Zoom / canvas ───────────────────────── */
+function fitZoom(){
+  if(!buf)return;
+  const w=waveScroll.clientWidth||window.innerWidth;
+  bpps=w/buf.length; zoom=1; zoomSl.value=1; redraw();
+}
+
+function redraw(){
+  if(!buf||!wd)return;
+  const pps=bpps*zoom;
+  const h=Math.max(110,waveScroll.clientHeight||180);
+  totPx=Math.max(waveScroll.clientWidth||window.innerWidth,Math.ceil(buf.length*pps));
+
+  waveCv.width=totPx; waveCv.height=h;
+  waveInner.style.width=totPx+'px'; waveInner.style.height=h+'px';
+  rulerCv.width=totPx;
+
+  drawRuler(); drawWave(); drawPH(); drawSel();
+}
+
+/* ── Ruler ───────────────────────────────── */
+function drawRuler(){
+  if(!buf)return;
+  const w=rulerCv.width, sr=buf.sampleRate, dur=buf.duration;
+  RCX.clearRect(0,0,w,26); RCX.fillStyle='#111318'; RCX.fillRect(0,0,w,26);
+  const pps=bpps*zoom;
+  const ivs=[.001,.01,.05,.1,.25,.5,1,2,5,10,15,30,60,120,300,600];
+  let tick=ivs.find(t=>t*pps*sr>=55)||600;
+  const minor=tick/5;
+  RCX.font='10px JetBrains Mono,monospace'; RCX.textAlign='left';
+  let t=0;
+  while(t<=dur+.001){
+    const x=t*pps*sr;
+    const maj=Math.abs((t/tick)-Math.round(t/tick))<.001;
+    RCX.strokeStyle=maj?'#3a4155':'#1f232d'; RCX.lineWidth=1;
+    RCX.beginPath(); RCX.moveTo(x,maj?0:18); RCX.lineTo(x,26); RCX.stroke();
+    if(maj&&x+2<w){RCX.fillStyle='#8892a4';RCX.fillText(fmt(t,tick<1),x+3,11);}
+    t=Math.round((t+minor)*10000)/10000;
+  }
+}
+
+/* ── Waveform ────────────────────────────── */
+function drawWave(){
+  if(!buf||!wd)return;
+  const w=waveCv.width,h=waveCv.height;
+  WCX.clearRect(0,0,w,h); WCX.fillStyle='#0a0b0e'; WCX.fillRect(0,0,w,h);
+  WCX.strokeStyle='#181b22'; WCX.lineWidth=1;
+  for(const v of[-.75,-.5,-.25,0,.25,.5,.75]){
+    const y=h/2-v*h/2; WCX.beginPath();WCX.moveTo(0,y);WCX.lineTo(w,y);WCX.stroke();
+  }
+  WCX.strokeStyle='#2a2f3e'; WCX.beginPath();WCX.moveTo(0,h/2);WCX.lineTo(w,h/2);WCX.stroke();
+
+  const pps=bpps*zoom;
+  const {mn,mx,step,cnt}=wd;
+  WCX.strokeStyle='#00e5ff'; WCX.lineWidth=1; WCX.beginPath();
+  for(let px=0;px<w;px++){
+    const i0=Math.floor(px/pps/step),i1=Math.ceil((px+1)/pps/step);
+    let lo=0,hi=0;
+    for(let i=i0;i<=i1&&i<cnt;i++){if(mn[i]<lo)lo=mn[i];if(mx[i]>hi)hi=mx[i];}
+    WCX.moveTo(px+.5,h/2-hi*(h/2-2)); WCX.lineTo(px+.5,h/2-lo*(h/2-2));
+  }
+  WCX.stroke();
+
+  if(buf.numberOfChannels>1){
+    const ch1=buf.getChannelData(1);
+    WCX.strokeStyle='rgba(0,229,255,.22)'; WCX.lineWidth=1; WCX.beginPath();
+    for(let px=0;px<w;px++){
+      const s=Math.floor(px/pps),e=Math.ceil((px+1)/pps);
+      let lo=0,hi=0;
+      for(let j=s;j<e&&j<ch1.length;j++){if(ch1[j]<lo)lo=ch1[j];if(ch1[j]>hi)hi=ch1[j];}
+      WCX.moveTo(px+.5,h/2-hi*(h/2-2)); WCX.lineTo(px+.5,h/2-lo*(h/2-2));
     }
+    WCX.stroke();
+  }
+}
 
-    // File Handling
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => e.target.files[0] && loadFile(e.target.files[0]));
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone.addEventListener('drop', e => {
-      e.preventDefault();
-      dropZone.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('audio/')) loadFile(file);
-    });
+function drawPH(){
+  if(!buf)return;
+  ph.style.left=(curS*bpps*zoom)+'px';
+}
 
-    async function loadFile(file) {
-      initAudio();
-      statusEl.textContent = 'Decoding audio...';
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-        audioBuffer = decoded;
-        fileNameEl.textContent = file.name;
-        resetSelection();
-        saveState();
-        renderWaveform();
-        dropZone.style.display = 'none';
-        editor.classList.add('active');
-        statusEl.textContent = 'Ready. Select region on waveform to cut.';
-        rippleCutBtn.disabled = false;
-        updateUI();
-      } catch (err) {
-        statusEl.textContent = 'Error decoding audio. Try another file.';
-        console.error(err);
-      }
+function drawSel(){
+  if(!buf||selA<0||selB<=selA){selOvl.style.display='none';return;}
+  const pps=bpps*zoom;
+  selOvl.style.display='block';
+  selOvl.style.left =(selA*pps)+'px';
+  selOvl.style.width=((selB-selA)*pps)+'px';
+}
+
+function updateSelDsp(){
+  if(!buf||selA<0||selB<=selA){selDsp.textContent='No selection';return;}
+  const dur=s2t(selB-selA);
+  selDsp.textContent=`${fmt(s2t(selA),false)}→${fmt(s2t(selB),false)} (${fmt(dur)})`;
+}
+
+/* ── Playback ─────────────────────────────── */
+function playAudio(){
+  if(!buf)return;
+  if(actx.state==='suspended')actx.resume();
+  stopAudio(false);
+  src=actx.createBufferSource(); src.buffer=buf; src.connect(gain);
+  src.loop=looping&&selA>=0&&selB>selA;
+  if(src.loop){src.loopStart=s2t(selA);src.loopEnd=s2t(selB);}
+  t0=actx.currentTime; off0=s2t(curS);
+  src.start(0,off0); playing=true; setPIC(true);
+  src.onended=()=>{if(playing&&!looping)stopAudio(false);};
+  tickRaf();
+}
+
+function pauseAudio(){
+  if(!playing)return;
+  curS=t2s(off0+(actx.currentTime-t0));
+  stopAudio(false);
+}
+
+function stopAudio(reset=true){
+  if(src){try{src.stop();}catch(e){}src=null;}
+  playing=false;
+  if(reset){curS=0;off0=0;}
+  setPIC(false); cancelAnimationFrame(raf);
+  drawPH();
+  if(buf){seekbar.value=Math.round(curS/buf.length*1000);timeDsp.textContent=fmt(s2t(curS));}
+}
+
+function setPIC(p){
+  $('play-ic').setAttribute('d',p?'M6 4h4v16H6zM14 4h4v16h-4z':'M5 3l14 9-14 9V3z');
+}
+
+function tickRaf(){
+  if(!playing)return;
+  curS=t2s(off0+(actx.currentTime-t0));
+  if(curS>=buf.length){stopAudio(false);return;}
+  timeDsp.textContent=fmt(s2t(curS));
+  seekbar.value=Math.round(curS/buf.length*1000);
+  drawPH();
+  const pps=bpps*zoom,px=curS*pps;
+  const sw=waveScroll.clientWidth,sl=waveScroll.scrollLeft;
+  if(px>sl+sw*.82||px<sl)waveScroll.scrollLeft=Math.max(0,px-sw*.15);
+  raf=requestAnimationFrame(tickRaf);
+}
+
+function togglePlay(){playing?pauseAudio():playAudio();}
+
+/* ── Waveform interaction ──────────────────── */
+function getX(e){
+  const rect=waveCv.getBoundingClientRect();
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  return cx-rect.left+waveScroll.scrollLeft;
+}
+function px2s(px){return Math.round(Math.max(0,Math.min(buf.length-1,px/(bpps*zoom))));}
+
+function onPtrDown(e){
+  if(!buf)return; e.preventDefault();
+  const s=px2s(getX(e));
+  dragging=true; dragA=s; selA=s; selB=s;
+  drawSel(); updateSelDsp(); sync();
+}
+function onPtrMove(e){
+  if(!dragging||!buf)return; e.preventDefault();
+  const s=px2s(getX(e));
+  if(s<dragA){selA=s;selB=dragA;}else{selA=dragA;selB=s;}
+  drawSel(); updateSelDsp(); sync();
+}
+function onPtrUp(){
+  if(!dragging)return; dragging=false;
+  const MIN=Math.max(10,t2s(.001));
+  if(selB-selA<MIN){
+    curS=selA; selA=selB=-1;
+    drawSel(); drawPH();
+    timeDsp.textContent=fmt(s2t(curS));
+    seekbar.value=Math.round(curS/buf.length*1000);
+  }
+  updateSelDsp(); sync();
+}
+
+waveCv.addEventListener('mousedown',  onPtrDown);
+waveCv.addEventListener('mousemove',  onPtrMove);
+waveCv.addEventListener('mouseup',    onPtrUp);
+waveCv.addEventListener('mouseleave', ()=>{dragging=false;});
+waveCv.addEventListener('touchstart', onPtrDown, {passive:false});
+waveCv.addEventListener('touchmove',  onPtrMove, {passive:false});
+waveCv.addEventListener('touchend',   onPtrUp,   {passive:false});
+
+waveScroll.addEventListener('scroll', ()=>{
+  rulerCv.style.transform=`translateX(${-waveScroll.scrollLeft}px)`;
+});
+
+/* ── Cut ─────────────────────────────────── */
+function cut(){
+  if(!buf||selA<0||selB<=selA)return;
+  const fi=Math.min(parseInt(fiMs.value)/1000,s2t(selA)/2);
+  const fo=Math.min(parseInt(foMs.value)/1000,s2t(buf.length-selB)/2);
+  const fiN=t2s(fi),foN=t2s(fo);
+  pushH(cpBuf(buf));
+  const nCh=buf.numberOfChannels, newLen=buf.length-(selB-selA);
+  if(newLen<=0){history.pop();alert('Selection covers entire audio.');return;}
+  const nb=actx.createBuffer(nCh,newLen,buf.sampleRate);
+  for(let c=0;c<nCh;c++){
+    const s=buf.getChannelData(c),d=nb.getChannelData(c);
+    for(let i=0;i<selA;i++)d[i]=s[i];
+    for(let i=selB;i<buf.length;i++)d[i-(selB-selA)]=s[i];
+    for(let i=0;i<foN;i++){const ix=selA-foN+i;if(ix>=0)d[ix]*=i/foN;}
+    for(let i=0;i<fiN;i++){const ix=selA+i;if(ix<newLen)d[ix]*=i/fiN;}
+  }
+  buf=nb;
+  if(curS>selA)curS=Math.max(0,curS-(selB-selA));
+  selA=selB=-1; onBufChg(true);
+  msg('Region removed with crossfade');
+}
+
+/* ── Fade ─────────────────────────────────── */
+function applyFade(){
+  if(!buf||selA<0||selB<=selA)return;
+  const fi=parseInt(fiMs.value)/1000, fo=parseInt(foMs.value)/1000;
+  pushH(cpBuf(buf));
+  const selLen=selB-selA;
+  const fiN=Math.min(t2s(fi),selLen), foN=Math.min(t2s(fo),selLen);
+  for(let c=0;c<buf.numberOfChannels;c++){
+    const d=buf.getChannelData(c);
+    for(let i=0;i<fiN;i++)d[selA+i]*=i/fiN;
+    for(let i=0;i<foN;i++)d[selB-1-i]*=i/foN;
+  }
+  buildWD(); redraw(); sync();
+  msg(`Fade: ${fi*1000|0}ms in / ${fo*1000|0}ms out`);
+}
+
+/* ── Export WAV ───────────────────────────── */
+async function exportWav(){
+  if(!buf)return;
+  showProg('Exporting WAV…');
+  await new Promise(r=>setTimeout(r,30));
+  try{
+    const nCh=buf.numberOfChannels,sr=buf.sampleRate,len=buf.length;
+    updProg(20,'Writing samples…');
+    const db=len*nCh*2, ab=new ArrayBuffer(44+db), v=new DataView(ab);
+    const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+    ws(0,'RIFF');v.setUint32(4,36+db,true);ws(8,'WAVE');ws(12,'fmt ');
+    v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nCh,true);
+    v.setUint32(24,sr,true);v.setUint32(28,sr*nCh*2,true);v.setUint16(32,nCh*2,true);
+    v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,db,true);
+    updProg(50,'Encoding…');
+    const chs=Array.from({length:nCh},(_,c)=>buf.getChannelData(c));
+    let o=44;
+    for(let i=0;i<len;i++)for(let c=0;c<nCh;c++){
+      const s=Math.max(-1,Math.min(1,chs[c][i]));
+      v.setInt16(o,s<0?s*0x8000:s*0x7FFF,true);o+=2;
     }
+    updProg(95,'Creating download…');
+    const blob=new Blob([ab],{type:'audio/wav'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='waveforge_export.wav';a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    updProg(100,'Done!'); msg('WAV exported'); setTimeout(hideProg,600);
+  }catch(e){hideProg();msg('Export failed: '+e.message);alert(e.message);}
+}
 
-    // Waveform Rendering (Downsampled for performance)
-    function renderWaveform() {
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+/* ── Keyboard ─────────────────────────────── */
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  switch(e.code){
+    case 'Space':   e.preventDefault();togglePlay();break;
+    case 'Escape':  stopAudio();break;
+    case 'Delete':
+    case 'Backspace':if(selA>=0)cut();break;
+    case 'KeyZ':if(e.ctrlKey||e.metaKey){e.preventDefault();e.shiftKey?doRedo():doUndo();}break;
+    case 'KeyY':if(e.ctrlKey||e.metaKey){e.preventDefault();doRedo();}break;
+    case 'KeyA':if(e.ctrlKey||e.metaKey){e.preventDefault();selAll();}break;
+  }
+});
 
-      const width = rect.width;
-      const height = rect.height;
-      const data = audioBuffer.getChannelData(0);
-      const step = Math.ceil(data.length / width);
-      const amp = height / 2;
+function selAll(){if(!buf)return;selA=0;selB=buf.length;drawSel();updateSelDsp();sync();}
 
-      ctx.clearRect(0, 0, width, height);
-      ctx.strokeStyle = '#6c5ce7';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
+/* ── Button wiring ───────────────────────── */
+btnUpload.addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);});
 
-      for (let i = 0; i < width; i++) {
-        let min = 1.0, max = -1.0;
-        for (let j = 0; j < step; j++) {
-          const val = data[i * step + j] || 0;
-          if (val < min) min = val;
-          if (val > max) max = val;
-        }
-        const y1 = (1 + min) * amp;
-        const y2 = (1 + max) * amp;
-        ctx.moveTo(i, y1);
-        ctx.lineTo(i, y2);
-      }
-      ctx.stroke();
-    }
+dropZone.addEventListener('dragover', e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{
+  e.preventDefault();dropZone.classList.remove('drag-over');
+  if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);
+});
 
-    // Selection Handling
-    canvas.addEventListener('mousedown', e => {
-      isSelecting = true;
-      const rect = canvas.getBoundingClientRect();
-      mouseDownX = e.clientX - rect.left;
-      selectionStart = null;
-      selectionEnd = null;
-      selectionEl.style.display = 'none';
-    });
+btnPlay.addEventListener('click',togglePlay);
+btnStop.addEventListener('click',()=>stopAudio(true));
+btnLoop.addEventListener('click',()=>{
+  looping=!looping;btnLoop.classList.toggle('act',looping);
+  if(playing){pauseAudio();playAudio();}
+});
 
-    canvas.addEventListener('mousemove', e => {
-      if (!isSelecting || !audioBuffer) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const ratio = x / rect.width;
-      const time = ratio * audioBuffer.duration;
+btnCut.addEventListener('click',cut);
+btnFade.addEventListener('click',()=>{
+  const s=fadePnl.classList.toggle('show');
+  btnFade.classList.toggle('act',s);
+});
+btnAplFade.addEventListener('click',applyFade);
+btnUndo.addEventListener('click',doUndo);
+btnRedo.addEventListener('click',doRedo);
+btnExport.addEventListener('click',exportWav);
 
-      if (mouseDownX <= x) {
-        selectionStart = (mouseDownX / rect.width) * audioBuffer.duration;
-        selectionEnd = time;
-      } else {
-        selectionStart = time;
-        selectionEnd = (mouseDownX / rect.width) * audioBuffer.duration;
-      }
+btnZI.addEventListener('click',()=>{zoom=Math.min(200,zoom*1.5);zoomSl.value=zoom;redraw();});
+btnZO.addEventListener('click',()=>{zoom=Math.max(1,zoom/1.5);zoomSl.value=zoom;redraw();});
+btnFit.addEventListener('click',fitZoom);
+btnSelAll.addEventListener('click',selAll);
+btnSelClr.addEventListener('click',()=>{selA=selB=-1;drawSel();updateSelDsp();sync();});
 
-      const leftPct = (selectionStart / audioBuffer.duration) * 100;
-      const widthPct = ((selectionEnd - selectionStart) / audioBuffer.duration) * 100;
-      selectionEl.style.left = `${leftPct}%`;
-      selectionEl.style.width = `${widthPct}%`;
-      selectionEl.style.display = 'block';
-      selectionInfoEl.textContent = `${formatTime(selectionStart)} → ${formatTime(selectionEnd)}`;
-    });
+zoomSl.addEventListener('input',()=>{zoom=parseFloat(zoomSl.value);redraw();});
+volSl.addEventListener('input',()=>{gain.gain.value=parseFloat(volSl.value);});
 
-    canvas.addEventListener('mouseup', () => {
-      isSelecting = false;
-      rippleCutBtn.disabled = (selectionStart === null || selectionEnd === null);
-    });
+seekbar.addEventListener('input',()=>{
+  if(!buf)return;
+  curS=Math.round(parseInt(seekbar.value)/1000*buf.length);
+  timeDsp.textContent=fmt(s2t(curS));
+  drawPH();
+  if(playing){pauseAudio();playAudio();}
+});
 
-    function resetSelection() {
-      selectionStart = null;
-      selectionEnd = null;
-      selectionEl.style.display = 'none';
-      selectionInfoEl.textContent = '';
-      rippleCutBtn.disabled = true;
-    }
+/* ── Resize observer ─────────────────────── */
+let rsT;
+new ResizeObserver(()=>{
+  clearTimeout(rsT);
+  rsT=setTimeout(()=>{if(buf)fitZoom();},220);
+}).observe(waveArea);
 
-    // Playback
-    playBtn.addEventListener('click', () => {
-      initAudio();
-      if (isPlaying) return;
-      sourceNode = audioCtx.createBufferSource();
-      sourceNode.buffer = audioBuffer;
-      sourceNode.connect(audioCtx.destination);
-      sourceNode.start(0, playbackOffset);
-      playbackStartTime = audioCtx.currentTime;
-      isPlaying = true;
-      playBtn.disabled = true;
-      pauseBtn.disabled = false;
-      stopBtn.disabled = false;
-      statusEl.textContent = 'Playing...';
-      requestAnimationFrame(updateTimer);
-    });
-
-    pauseBtn.addEventListener('click', () => {
-      if (!isPlaying) return;
-      playbackOffset += audioCtx.currentTime - playbackStartTime;
-      sourceNode.stop();
-      isPlaying = false;
-      playBtn.disabled = false;
-      pauseBtn.disabled = true;
-      stopBtn.disabled = false;
-      statusEl.textContent = 'Paused';
-    });
-
-    stopBtn.addEventListener('click', () => {
-      if (isPlaying) {
-        sourceNode.stop();
-        isPlaying = false;
-      }
-      playbackOffset = 0;
-      playBtn.disabled = false;
-      pauseBtn.disabled = true;
-      stopBtn.disabled = true;
-      statusEl.textContent = 'Stopped';
-      timerEl.textContent = '00:00.00';
-    });
-
-    // Timer
-    function updateTimer() {
-      if (!isPlaying) return;
-      const elapsed = playbackOffset + (audioCtx.currentTime - playbackStartTime);
-      timerEl.textContent = formatTime(elapsed);
-      requestAnimationFrame(updateTimer);
-    }
-
-    // Ripple Cut
-    rippleCutBtn.addEventListener('click', () => {
-      if (selectionStart === null || selectionEnd === null) return;
-      initAudio();
-      try {
-        const sr = audioBuffer.sampleRate;
-        const ch = audioBuffer.numberOfChannels;
-        const startSamp = Math.floor(selectionStart * sr);
-        const endSamp = Math.floor(selectionEnd * sr);
-        const newLen = audioBuffer.length - (endSamp - startSamp);
-        if (newLen <= 0) throw new Error('Cannot cut entire audio');
-
-        const newBuf = audioCtx.createBuffer(ch, newLen, sr);
-        for (let c = 0; c < ch; c++) {
-          const oldData = audioBuffer.getChannelData(c);
-          const newData = newBuf.getChannelData(c);
-          newData.set(oldData.subarray(0, startSamp), 0);
-          newData.set(oldData.subarray(endSamp), startSamp);
-        }
-
-        saveState();
-        audioBuffer = newBuf;
-        playbackOffset = Math.min(playbackOffset, audioBuffer.duration);
-        renderWaveform();
-        resetSelection();
-        statusEl.textContent = `Ripple cut applied. Duration: ${formatTime(audioBuffer.duration)}`;
-        updateUI();
-      } catch (err) {
-        statusEl.textContent = err.message;
-        console.error(err);
-      }
-    });
-
-    // Undo
-    undoBtn.addEventListener('click', () => {
-      if (undoStack.length <= 1) return;
-      initAudio();
-      undoStack.pop(); // Remove current
-      audioBuffer = cloneBuffer(undoStack[undoStack.length - 1]);
-      playbackOffset = 0;
-      if (isPlaying) sourceNode.stop();
-      isPlaying = false;
-      renderWaveform();
-      resetSelection();
-      statusEl.textContent = 'Undone';
-      updateUI();
-    });
-
-    function saveState() {
-      const clone = cloneBuffer(audioBuffer);
-      undoStack.push(clone);
-      if (undoStack.length > MAX_UNDO) undoStack.shift();
-      undoBtn.disabled = false;
-    }
-
-    function cloneBuffer(buf) {
-      const newBuf = audioCtx.createBuffer(buf.numberOfChannels, buf.length, buf.sampleRate);
-      for (let i = 0; i < buf.numberOfChannels; i++) {
-        newBuf.getChannelData(i).set(buf.getChannelData(i));
-      }
-      return newBuf;
-    }
-
-    // UI Helpers
-    function updateUI() {
-      durationEl.textContent = formatTime(audioBuffer.duration);
-      playBtn.disabled = isPlaying;
-      undoBtn.disabled = undoStack.length <= 1;
-      rippleCutBtn.disabled = selectionStart === null;
-    }
-
-    function formatTime(sec) {
-      if (isNaN(sec) || sec < 0) sec = 0;
-      const m = Math.floor(sec / 60);
-      const s = sec % 60;
-      return `${m.toString().padStart(2, '0')}:${s.toFixed(2).padStart(5, '0')}`;
-    }
-
-    // Resize handler
-    window.addEventListener('resize', () => {
-      if (audioBuffer) renderWaveform();
-    });
-  </script>
+/* ── Init ────────────────────────────────── */
+sync();
+</script>
 </body>
 </html>
